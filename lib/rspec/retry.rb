@@ -1,4 +1,5 @@
 require 'rspec/core'
+require 'vcr'
 require 'rspec/retry/version'
 require 'rspec_ext/rspec_ext'
 
@@ -82,6 +83,10 @@ module RSpec
       RSpec.configuration.display_try_failure_messages?
     end
 
+    def vcr
+      ex.metadata[:vcr]
+    end
+
     def run
       example = current_example
 
@@ -95,7 +100,13 @@ module RSpec
         end
 
         example.clear_exception
-        ex.run
+        if vcr
+          VCR.use_cassette(vcr, :match_requests_on => [:host], allow_playback_repeats: true) do
+            ex.run
+          end
+        else
+          ex.run
+        end
 
         self.attempts += 1
 
